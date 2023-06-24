@@ -1,0 +1,99 @@
+/**************************************************
+OOP345NFF Workshop 1
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 15 Sep 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+This workshop introduces a number of concepts, namely translation unit, external and internal linkage, and such keywords as extern and static.
+
+For internal linkage, the use of static is essential in the case of counter for the two required tables of cars:
+
+(in sdds)
+static int counter = 0;
+
+(in display)
+if (reset) {
+counter = 0;
+}
+std::cout << ++counter;
+
+This internal variable "counter" is for use across different scopes in the same translation unit. I placed counter right under sdds but it is also available for use in case any other function needs it. The memory allocated for this static variable is present throughout the lifetime of the translation unit and the program. Since a global/member variable is not used, then static variable is the choice for declaring counter.
+
+There is the use of the keyword extern for "g_taxrate" and "g_discount" for external linkage between main and carads:
+
+carads.h:
+extern double g_taxrate;
+extern double g_discount;
+
+carads.cpp:
+double g_taxrate = 0.0;//initialized
+double g_discount = 0.0;//initailized
+
+They are global variables and any other module can access them just by including the carads module, and thus modify these variables if needed. This is different from the static variable above since external linkage allows the changing of global variables outside their own translation unit.
+
+2.
+The keyword static is for use in different types and contexts. In this case, there is just one static variable called counter and only used by the function read. The static variable "counter", an integer, is allocated space for the lifetime of the program and visible only within the same translation unit. This is memory allocation for only once, one copy, and the value of "counter" in a previous function call gets carried through the next. That is how counter appears in two tables of carads translation unit because it is reset by (bool) "reset", it counts again in one table after another. The static variable is maintained throughout the translation unit internally.
+
+3.
+There are updates in part 2 and my main two reasons are to streamline or simplify the code and to cater for the needs in part 2.
+
+In display, I removed one line of std::cout.unsetf(std::ios::fixed) (before pDiscount) and one line of std::cout.setf(std::ios::fixed) (after pDiscount). Alternatively, I could simply use std::right/left.
+
+In read, "brand" is now dynamic so it is now initialized as
+char* brand{}
+instead of the original static way
+char brand[10]{}
+
+To cater for "brand" as a dynamically-allocated c-string, I use a "localbrand" string to read its length and then format it for strcpy through std::c_str(). I simplified the part on "pDiscount" with a conditional ternary operator. There is no need to write if applyDiscount is 'Y' or, else if, it is 'N'.
+
+pDiscount = applyDiscount == 'Y' ? true : false;
+
+I used std::getline in part 1 for "brand" and "model" and did the same in part 2. Originally I thought std::get was necessary for "model" in part 2 because I thought std::getline "ate up" the "year" the followed "model".
+
+The correct code:
+istr.getline(model, 15, ',');
+istr >> year;
+
+Alternatively this also works:
+istr.get(mode, 15, ',');
+istr.ignore();
+istr >> year;
+
+Writing this way would truncate the year string and "20" in "2015/21/22" would not display:
+istr.getline(model, 15, ',');
+istr.ignore();
+istr >> year;
+
+This workshop does not say std::get but the above was just my discovery. std::ignore() was extra before "year".
+
+For the dynamically-allocated "brand" c-string, the rule of three applies (below) and I added copy constructor, copy assignment operator, and destructor functions.
+
+I changed operator bool() to reflect the requirement of returning "statusChar". Originally, "brand[0]" simply meant and implied bool would return true only if "brand" was not an empty string, and it worked only in part 1.
+
+std::istream& operator>>(std::istream& is, Cars& car)
+was added to help with read, and
+
+void operator>>(const Cars& car1, Cars& car2)
+was added to display new cars properly.
+
+4. The rule of three applies in this workshop because in part 2 there is the need to allocate memory dynamically for the specific c-string of "brand" that can come at any length. This is where we use std::getline to read a file and, instead of a fixed c-string length, the length is variable, warranting the use of std::string::c_str and std::string::length.
+
+if (localbrand.length() > 0) {
+delete[] brand;
+brand = new char[localbrand.length() + 1];
+strcpy(brand, localbrand.c_str());
+}
+
+Because I allocate dynamically resources for the c-string "brand", I define this string in the copy assignment operator explicitly and thus it warrants the definitions too for copy constructor as well as the destructor which deallocate "brand".
+
+Cars(const Cars& src);
+Cars& operator=(const Cars& src);
+~Cars();
+
+Overall, and I expect to say this again in later workshops, very often there are updates of code from part 1 in part 2. Upon completion, part 2's code often works well if used on part 1.

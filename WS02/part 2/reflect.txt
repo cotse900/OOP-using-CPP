@@ -1,0 +1,81 @@
+/**************************************************
+OOP345NFF Workshop 2
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 22 Sep 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+Copy and move semantics is different. The rule of three, in which case copy constructor and copy assignment work, is about copying elements of the required resource, whereas in the rule of five, move constructor and move assignment only aim at moving elements of the resource. In copying, there is the need to allocate memory for the resource and it takes time to copy whole memory blocks. Moving involves moving a reference from one object to another, and putting elements of the original object to empty/nullptr/0 depending on whether it is dynamic or static. The long copying processes explain how it takes (far) more time to copy than to simply move a resource.
+
+On my most recent trial run, this workshop returns the following:
+Statistics
+-----------------------
+      Default Constructor:     587800 nanoseconds.
+       Custom Constructor:  459084800 nanoseconds.
+         Copy Constructor:  114927700 nanoseconds.
+ Copy Assignment Operator:  123185300 nanoseconds.
+         Move Constructor:     869800 nanoseconds.
+ Move Assignment Operator:     396200 nanoseconds.
+               Destructor:   29459100 nanoseconds.
+
+The time difference between copying and moving is quite obvious. The custom constructor takes the work of reading and re-reading the csv file. Copying takes less time than reading, but it in turn still takes far more time than moving. While copying involves l-value references, moving takes on r-value references, and a change of pointing to the existing object in the memory. While copying takes a few rounds and it leads to "redundant" overhead, moving only makes the pointer of the object point to data of a temporary object, and then nulls out that pointer to that temporary object. That reduces the above redundant copying of data.
+
+2.
+In TennisLog::TennisLog(const char* filename), first it reads the file through its file name by ifstream, then I set up a local numLines to mark the number of lines and a dummy std::string localstr to receive every line after. Assume the file is alright, then I takes away the first (extra) line by
+
+std::getline(file, localstr)
+
+And then extract every line after line 1 while incrementing numLines. After this, it adds new TennisMatch[numLines], clears the file in memory, start from the beginning with
+
+file.seekg(0)
+
+It repeats the same
+
+std::getline(file, localstr)
+
+To see if there are matches. While getline works for every line, then the same getline repeats over and again to extract every single individual value in the entire csv file delimited by a comma and increments numMatches (the number of matches in the original struct TennisMatch) in the process. At last, it closes the file.
+
+Previously, I learned about further topics in OOP345 and I think of at least two things. First, I can perhaps think of a way to simply skip the first line, read everything from line 2 and only once, and this should save overhead.
+
+Second, I can use stringstream (#include <sstream>) whether stringstream is used to read (or skip) line 1, or we use getline anyway for line 1 (as I did, above), and use stringstream for every line for the required output in this workshop. Alternatively, I can simply write such a thing as
+
+file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+to ignore line 1 specifically but continue to read from line 2.
+
+Reference 1:
+https://stackoverflow.com/questions/33250380/c-skip-first-line-of-csv-file
+
+Reference 2:
+https://stackoverflow.com/questions/69425186/how-to-skip-reading-the-first-line-of-file
+
+I am frankly not very familiar yet with vector so I am yet to see how this entire file reading can be a little more efficient than rewinding.
+
+3.
+std::chrono::steady_clock is a monotonic clock. Its time points do not decrease over time and the time between ticks is constant. Since it is not related to clock time in the general sense, it is suitable for measuring intervals.
+
+std::chrono::system_clock on the other hand is the system-wide real time wall clock and may not be monotonic on different systems. The system time can be adjusted anytime. This is for real time, so it is good for calculations of real time, not intervals.
+
+4.
+The most difficult part was reading the file like in many previous coding tasks. There was so much getline that it could get confusing. I also spent some time on thinking out
+
+TennisMatch TennisLog::operator[](size_t index) const
+
+Just because returning an entire struct looks unfamiliar or unusual. I believe many students are likely to overthink when it is simply
+
+TennisMatch localmatch;
+	if (numMatches > 0) {
+		localmatch = m_Match[index];
+	}
+	return localmatch;
+
+Just a few lines. Leaving the struct empty
+
+	localmatch = {};
+
+is in fact extra but keeping this line feels more readable than without.

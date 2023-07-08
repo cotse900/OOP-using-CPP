@@ -1,0 +1,53 @@
+/**************************************************
+OOP345NFF Workshop 3
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 29 Sep 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+The Queue module has no .cpp file because it is a template file, not a class or a function. There is the requirement for separate compilation because, across different translations, it is most portable to have just template definitions in header files only. With some compilers, it may not be possible for them to see through .cpp files for the template definitions if put in .cpp files.
+
+It is possible to do explicit instantiation in separate .cpp files, and the linker can still see and find those files and definitions there, but as Occam's razor goes, if header files can already carry templates, then there is no need for .cpp files for templates - if we are not yet doing explicit instantiations for each and every case (module) in the case of some larger projects.
+
+2.
+In the Dictionary module, I added the following:
+-default constructor
+
+Dictionary();
+
+This is because the workshop has provided a custom constructor.
+
+Dictionary(const std::string& term, const std::string& definition) : m_term{ term }, m_definition{ definition }{};
+
+It is necessary to add back this default constructor since the compiler does not provide it automatically with a custom constructor.
+
+-a write function
+
+std::ostream& write(std::ostream& ostr) const;
+
+This function is for printing dictionary content "(m_term) : (m_definition)".
+
+-and an insertion operator function
+
+std::ostream& operator<<(std::ostream& ostr, const Dictionary& src);
+
+This function simply inserts what the write function above writes. Write and insertion operator can merge but it is better to keep them separate, just so it is easier to update the write function, although this is just my choice.
+
+-an equal to operator function
+
+bool operator==(const Dictionary& rhs) const;
+
+This function is for comparing m_term == rhs.m_term to see if they on different sides of operands are equal dictionary terms.
+
+3.
+The reason for specializing the push() member function is, while the Queue class is a template for all primitive types, we have the case of double type, so we need to do specialization for double, specifically, to utilize well the bool operator== function (above) and compare two double values with a minimal difference of 0.005 or less by employing std::fabs(). The specialization can take care of specialized circumstances that the general template does not already address.
+
+4.
+The whole deal of defining a class variable (const static T dummyObject) outside a class definition is for at least three purposes in this exercise: the purpose of this exercise, the one definition rule, and easy maintenance of the general code here. dummyObject does not strictly have to be static, nor const, but it is only defined once and only once. For the general purpose, it is empty {}, but for specialization in Dictionary, it is {"Empty Term", "Empty Substitute"}. There can be different scopes and different translation units even with three modules in this exercise, so it makes a lot of sense to simply employ a single static variable. We have no need to worry about multiple definitions (multiple dummyObject) that another programmer might want to use, and it will simply be in static memory.
+
+The only "quirk" is C++ 17 allows declaring a static variable inside a class (Queue) but it doesn't change the nature of static-ness.

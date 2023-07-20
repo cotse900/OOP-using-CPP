@@ -1,0 +1,151 @@
+/**************************************************
+OOP345NFF Workshop 4
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 5 Oct 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+A composition involves complete ownership between classes and while it is less coupled than inheritance, it is more coupled than aggregation because a composition takes responsibility for destroying component objects along with the composer object's destruction. An aggregation does not manage objects that it uses (that it does not own). The creating and destroying of objects is not the business in aggregation.
+
+In this exercise, the differences show in memory allocation and the issue of copying.
+
+There is composition between Reservation and Restaurant because Restaurant manages an array of pointers of Reservation.
+
+Reservation** reservationPtrs{ (reservations here) };
+
+This is where the array of pointers requires management:
+
+	Restaurant::Restaurant(const Reservation* Reservations[], size_t count) : numReservations{ count }{
+		reservationPtrs = new Reservation * [numReservations];
+		for (size_t i = 0; i < numReservations; i++) {
+			reservationPtrs[i] = new Reservation(*Reservations[i]);
+		}
+		numReservations = count;
+	}
+
+const Reservation** reservationPtrs >>>> const Reservation* pointer1, 2, 3... N >>>> Reservation Reservation1, 2, 3... N. In other words, **reservationPtrs points to an array of pointers which points to Reservations.
+
+Reservation and ConfirmationSender are an aggregation. In ConfirmationSender, it uses, but not manages, Reservation by an array of pointers to Reservation obejcts.
+
+	const Reservation** reservationPtrs{ (reservations here) };
+
+ConfirmationSender does not manage Reservation's creation and destruction, and only takes a default constructor, without management of the array of pointers outlined above. While ConfirmationSender also uses the same array of pointers, it only copies pointers of the array.
+
+I added operator bool() const to facilitate copy constructors and move constructors and for simplicity in both Restaurant and ConfirmationSender.
+
+The following section discusses move and copy operations.
+
+2.
+In Restaurant's copy assignment, deep copying of pointers and the array of these pointers is required:
+
+	Restaurant& Restaurant::operator=(const Restaurant& src)
+	{
+		if (this != &src) {
+			for (size_t i = 0; i < numReservations; i++) {
+				delete reservationPtrs[i];
+			}
+			delete[] reservationPtrs;
+
+			numReservations = src.numReservations;
+
+			reservationPtrs = new Reservation * [size()];
+			for (size_t i = 0; i < size(); i++) {
+				reservationPtrs[i] = new Reservation(*src.reservationPtrs[i]);
+			}
+		}
+		return *this;
+	}
+
+Subsequently, in the destructor, along with copy assignment and move assignment, we are required to delete both pointers and the array of pointers for allocation purposes:
+
+	for (size_t i = 0; i < numReservations; i++) {
+		delete reservationPtrs[i];
+	}
+	delete[] reservationPtrs;
+
+ConfirmationSender's copy assignment is this:
+
+	ConfirmationSender& ConfirmationSender::operator=(const ConfirmationSender& src)
+	{
+		if (this != &src) {
+			delete[] reservationPtrs;
+			numReservations = src.numReservations;
+			reservationPtrs = new const Reservation * [numReservations] {};
+			for (int i = 0; i < numReservations; i++) {
+				reservationPtrs[i] = src.reservationPtrs[i];
+			}
+		}
+		return *this;
+	}
+
+Subsequently, in the destructor, copy assignment and move assignment, only the array of pointers gets deleted.
+
+	delete[] reservationPtrs;
+
+The main difference shown in this exercise is Restaurant deals with copies of Reservations whereas ConfirmationSender deals with originals of Reservations. Basically, just because of the nature of composition and aggregation, composition as shown in the above takes more work than aggregation. In this context, composition takes deep copying of both an array of pointers and pointers, whereas aggregation has no such and only copies the pointers.
+
+3.
+I think in part 1 the difficulty is to trim space and in fact multiple space in some cases. I used
+
+	std::string::find_first_not_of(' ')
+
+	std::string::find_last_not_of(' ')
+
+I had the choice between trimming every of ID, name, email, party, day, time with the above two functions and writing another function to contain both. It was not many more lines or fewer lines but I ran into a problem. Some ID had a space, so if you only trim all the space, and then use std::string::erase() to remove the entire substring (ID) before moving on the next substring (name), then the entire ID and every ID gets erased. Also, even if you can address the issue with ID with space, the above 2 functions don't automatically remove all the space. They remove, say, just one space.
+
+Then I ended up doing this:
+
+	while (trimThisStr[0] == ' ') {//erases leading space
+		trimThisStr.erase(0, trimThisStr.find_first_not_of(' '));
+	}
+	while (trimThisStr[trimThisStr.size() - 1] == ' ') {//removes trailing space
+		trimThisStr.erase(trimThisStr.find_last_not_of(' ') + 1);
+	}
+
+Interestingly, find_first_not_of removes all leading space in every case of this exercise, but find_last_not_of does not always remove all trailing space. This was exactly why I did the above to play safe. However, while I cannot say for sure, if you cast a substring with std::stoi/stod/stoul and make it an int/double/unsigned, leading or trailing space actually does not matter.
+
+The ID could have been string too, not char, but char still works with my above code simply with
+
+	strcpy(reservationID, localid.c_str());
+
+I also think while std::string::erase() is optional, and it is fine to only use std::string::find(), using both is far less work than just the find function simply because erase can deal with a certain delimiter without manual setting of character/string position.
+
+	localnem = line.substr(0, line.find(","));
+	trim(localnem);
+	line = line.erase(0, line.find(",") + 1);
+	reservationNem = localnem;
+
+In other words, use a "grand" string to store an entire line from data.txt. Using std::string::substr, use the find function to seek a substring up to a delimiter. Then, erase this substring from the grand string, but have a local string variable store this substring. As you find, erase, and store, you move onto the subsequent substrings.
+
+Trimming space is another thing but there just are many ways of doing the same thing.
+
+In part 2 my issue was ConfirmationSender's += and -= functions where I needed to decide if I would increment or decrement numReservations. Again, there are many ways of doing them but the two functions are definitely not identical nor written like they are mirroring each other. Not just that the instruction does not say write mirroring functions. Adding or removing a reservation simply is not this easy.
+
+	ConfirmationSender& ConfirmationSender::operator-=(const Reservation& res)
+	{
+		if (numReservations > 0) {
+			bool addressInArray = false;
+			int localindex = 0;
+			for (int i = 0; i < numReservations; i++) {
+				if (&res == reservationPtrs[i]) {
+					reservationPtrs[i] = nullptr;
+					addressInArray = true;
+
+				}
+			}
+			if (addressInArray) {
+				for (int j = localindex; j < numReservations - 1; j++) {
+					reservationPtrs[numReservations - 1] = nullptr;
+
+				}
+			}
+		}
+		return *this;
+	}
+
+The challenge was to resize the array, the lower part of this function. Either I got an extra reservation or I deleted one more reservation than necessary. It really was a math question, not coding.

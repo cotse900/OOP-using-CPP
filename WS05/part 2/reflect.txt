@@ -1,0 +1,117 @@
+/**************************************************
+OOP345NFF Workshop 5
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 13 Oct 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+A functor, also known as a function object, can be defined as the class of which function objects are instantiated. It overloads the function call operator () and it can store state. A lambda expression is a function object that is only used in a local area of a function, does not require a name, and, unlike a function pointer, has direct access to non-local variables.
+
+A functor can work like the function call operator in SpellChecker:
+
+	void SpellChecker::operator()(std::string& text)
+	{
+		for (size_t i = 0; i < max_word; i++) {
+			while (text.find(m_badWords[i]) != std::string::npos) {
+				text.replace(text.find(m_badWords[i]), m_badWords[i].length(), m_goodWords[i]);
+
+				count[i]++;
+			}
+		}
+	}
+
+A lambda expression can work like fixPrice:
+
+	auto fixPrice = [&](Book& livre) {
+		double& price = livre.price();
+		if (livre.country() == "US") price *= usdToCadRate;
+		else if (livre.country() == "UK" && livre.year() >= 1990 && livre.year() <= 1999) price *= gbpToCadRate;
+	};
+
+Here, I was looking for a capture by reference for the double named price by receiving a reference of Book and determining price.
+
+Compared to a functor, a lambda expression is a newer feature in modern C++ and lambda has the following advantages over functor:
+-lambda is more compact code than a whole functor, such as fixPrice above.
+-it is easier to locate a lambda when it is compact. SpellChecker's function call operator is not so long, but in other situations lambdas tend to be shorter.
+-lambda is also capable of storing state but in a compact way.
+-lambda can work for multiple overloads.
+-lambda is anonymous.
+
+The above can show lambda is handy for compact code and occasional use, almost like a shortcut or quick fix akin to a small function, however, a functor is better when
+-there are more elaborate and more robust of functionalities that warrant a full-fledged, then using a functor is still more conventional and sensible.
+-a name is needed for such a functionality, and extensive use across very different functions
+-when external linkage is required which lambda does not address
+
+Overall, how extensive a function is determines whether we need just a lambda for quick access or a functor for conventional and frequent calling of function.
+
+2.
+In my current code, SpellChecker's only exception is when a "bad file name" comes up or when the correct file is not being read. An alternative can be to use return values for an abnormal termination, such as enum return values for void std::terminate() and void std::abort()
+
+std::ifstream file(filename);
+		if (!file) {
+			throw "Bad file name!";
+		}
+
+It may be more advisable to just do a try and catch as in the main module as opposed to terminate().
+
+		try {
+			SpellChecker sp(argv[i]);
+			for (auto j = 0u; j < library.size(); ++j)
+				library[j].fixSpelling(sp);
+			sp.showStatistics(std::cout);
+
+			for (auto j = 0u; j < theCollection.size(); ++j)
+				theCollection[j].fixSpelling(sp);
+			sp.showStatistics(std::cout);
+		}
+		catch (const char* errorMsg) {
+			std::cout << "** EXCEPTION: " << errorMsg << std::endl;
+		}
+
+Another option is to use error code 1 in the main module for CannotOpenFile.
+
+std::ifstream file(argv[1]);
+		if (!file) {
+			std::cerr << "ERROR: Cannot open file[" << argv[1] << "].\n";
+			return 1;
+		}
+
+Overall, throw is not less effective than using an error code which is already in the main module, or another approach try and catch in my suppplied code.
+
+3.
+One way is to the create a (virtual) base class and Movie and Book will each inherit as two derived classes. It is also possible to include my trim function, if it is necessary, in the base class to simplify the overall code. The rest of code, such as constructor, display function, getters, etc., may still go separate for each class's needs. Another option is use a variadic template, particularly for the fact that 
+
+template<typename T>
+		void fixSpelling(T& spellChecker) {
+			spellChecker(description);
+		}
+
+template <typename T>
+		void fixSpelling(T& spellChecker) {
+			spellChecker(titleMovie);
+			spellChecker(desc);
+		}
+
+Book and Movie have a different number of parameters for SpellChecker. A variadic template is one easy way of parsing a varying number of parameters and further streamline the coding.
+
+4.
+I set a blank default constructor for both Book and Movie.
+
+Book() {};
+
+Movie::Movie() : titleMovie{ "" }, yearMovie{ 0 }, desc{ "" }{
+
+	}
+
+Strictly speaking, a lack of default constructor does not hurt in this case when I already initialized Book and Movie's private members as all blank/0 in their own classes. Essentially, we are using the custom constructors anyway, but I do not see a compelling reason to not have the default constructors altogether. Nothing is static in all of my code here.
+
+size_t count[max_word]{ 0 };
+
+in SpellChecker is not static either while it may be.
+
+Alternatively, I could add "delete" to the default constructors, the same effect as not having a default constructor, but it is not necessary.

@@ -1,0 +1,75 @@
+/**************************************************
+OOP345NFF Workshop 6
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 3 Nov 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+Autoshop warrants manual memory deallocation because the vector holds Vehicle* which is a set of addresses of objects, not the objects of Vehicle. The same template function of select goes for both Car, Van, and derived classes:
+
+		template <typename T>
+		void select(T test, std::list<const Vehicle*>& vehicles) {
+		for (auto it = m_vehicles.cbegin(); it != m_vehicles.cend(); it++) {
+			if (test(*it)) {
+				vehicles.push_back(*it);
+				}
+			}
+		}
+
+In Utilities, Vehicle* createInstance(std::istream& in) warrants dynamic memory allocation with the new instances of Car, Racecar, Van, and Luxuryvan. Whichever STL iterator can be used to delete the memory thus created, not just the the allocated array of addresses itself, but also individual addresses of objects in that container.
+
+			if (tag == 'c' || tag == 'C') {
+				instance = new Car(sstr);
+			}
+			else if (tag == 'r' || tag == 'R') {
+				instance = new Racecar(sstr);
+			}
+			else if (tag == 'v' || tag == 'V') {
+				instance = new Van(sstr);
+			}
+			else if (tag == 'l' || tag == 'L') {
+				instance = new Luxuryvan(sstr);
+			}
+
+Deallocation can be a simple vector-based approach.
+
+	Autoshop::~Autoshop()
+	{
+		for (auto v = m_vehicles.begin(); v != m_vehicles.end(); v++) {
+			delete* v;
+		}
+	}
+
+I tested many times and my conclusion is it is this "simple". Vehicle, the abstract base class, derives Car, Racecar, Van, and Luxuryvan, so working with Vehicle throughout in Autoshop and Utilities is enough to run everything smoothly. The main repeats code for "brokenVehicles":
+
+		auto brokenVehicles = [](const sdds::Vehicle* vehicles)->
+			bool {
+			return vehicles->condition() == "broken";
+		};
+
+But overall it is not too bad design. The above select is enough to dynamically allocate for all such instances and deallocate. Luxuryvan does not warrant an extra template function apart from select, and deallocation is the same as above.
+
+2.
+I use a try-catch block in loadData to check for errors due to invalid data:
+
+		try {
+			sdds::Vehicle* aVehicle = sdds::createInstance(file);
+			if (aVehicle)
+				as += aVehicle;
+		}
+
+		catch (std::string error) {
+			std::cout << error << std::endl;
+		}
+
+Whether for Condition/Type/Purpose characters and TopSpeed double figures, we use try-catch and in case the input is not the expected characters/figures, we throw with a string type statement for reporting errors and regard invalid data as an invalid record or an unrecognized type of vehicles. The try-catch approach is already good, but evidently things like std::ios::fail, especially failbit since OOP244, before error handling was introduced in OOP345, was also useful for checking for invalid data. Another way is to throw std::cerr messages like the given file of loadData's approach to file loading.
+
+3.
+It is possible to copy objects directly without recourse to pointers pointing to such objects, but not with the current settings. Direct copying will require, say, concrete classes and an environment without polymorphism, in which case the code would be far longer for the "same" goal, and it would also be less efficient than this current approach. The approach based on vector and pointers is also shown above.
+
+The trade-off for avoiding memory management is we need to copy many objects and that slows down operations. Say, it can warrant a full-fledged rule of 5, i.e. copy and move operations. The pointer approach in our exercise seems to require shorter code using the vector. We can alternatively use algorithm including such a functionality as for_each to loop through objects for assigning and deallocating pointer-based Vehicle objects above. But again, as Occam's razor goes, the above basic vector and use of pointers are good enough.

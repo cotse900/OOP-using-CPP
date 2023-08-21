@@ -1,0 +1,109 @@
+/**************************************************
+OOP345NFF Workshop 7
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 9 Nov 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+In this exercise I used the algorithm and numeric libraries to query and modify data within a sequential container which is a vector. I used for_each, accumulate, sort, transform, find_if, count_if, and copy_if across the module for the crime data.
+
+In the display() function,
+
+std::for_each(m_cases.cbegin(), m_cases.cend(), [&out](const Crime& base) {
+			out << base << std::endl;
+			});
+
+I used for_each because it is about the large amount of data in CrimeStatistics. for_each is the most generic algorithmic loop, in my opinion, and it is also good not to repeat the same algorithm elsewhere so I used this one. Alternatively, I could combine totalCases and totalResolved within the for_each loop, but either way it does not affect the code, except that separate totalCases and totalResolved are easier to maintain.
+
+I used numeric's accumulate exactly for separate totalCases and totalResolved:
+
+auto totalCases = std::accumulate(m_cases.cbegin(), m_cases.cend(), 0, [](auto& count, const Crime& base) -> auto {
+			return count + base.numCases;
+		});
+		auto totalResolved = std::accumulate(m_cases.cbegin(), m_cases.cend(), 0, [](auto& count, const Crime& base) -> auto {
+			return count + base.m_resolved;
+		});
+
+An advantage is it obviously shows this is "accumulate". totalCases += base.numCases/numResolved, a manual way of doing the same thing, would be slightly "harder" to read by another programmer.
+
+I used sort in sort() for CrimeStatistics according to province, crime type, cases, and resolved cases. This is the main STL function for sorting, so it like a default choice. I will explain sort attributes below.
+
+		if (field == "Province") {
+			std::sort(m_cases.begin(), m_cases.end(), [](const Crime& case1, const Crime& case2) -> bool {
+				return case1.province < case2.province;
+				});
+		}
+		...
+
+I used transform in cleanList() to remove [None] from any row that contains it. It is almost the default choice other than a manual loop or a for_each loop, and I chose transform to avoid a manual loop or repetition of for_each. The beautiful idea here is to use a lambda and pass base.crime from [None] to empty.
+
+std::transform(m_cases.cbegin(), m_cases.cend(), m_cases.begin(), [](Crime base) {
+			base.crime == "[None]" ? base.crime = " " : base.crime;
+			return base;
+			});
+
+I used find_if in inCollection() to find if a crime is of a certain crime type name. any_of is another choice and is shorter, but find_if itself is not bad in this situation. A manual loop would be rather long and difficult to maintain.
+
+auto found = std::find_if(m_cases.begin(), m_cases.end(), [=](const Crime& base)->bool {
+			return crime == base.crime;
+			});
+		return found != m_cases.end();
+
+I used count_if and copy_if in getListForProvince():
+
+size_t num = std::count_if(m_cases.begin(), m_cases.end(), [=](const Crime base)->bool {
+			return province == base.province;
+			});
+		std::list<Crime> howMany(num);
+		std::copy_if(m_cases.begin(), m_cases.end(), howMany.begin(), [=](const Crime base)->bool {
+			return province == base.province;
+			});
+		return howMany;
+
+If we use other algorithms, we will still most likely use a list to determine the data size of Crime. count_if is a clean choice for sorting out the data size - no need to resize or something - followed by copy_if to align rows by province. A manual loop would be far harder to write and maintain. Alternatively, it is possible to resize without count_if but may take additional algorithms instead of just count_if.
+
+2.
+The above showcasing of STL algorithms is not exhaustive but is ample evidence of how they are way better than manual loops in many ways. They are easier to maintain, shorter to write, and help students master a programming language. Even before joining this school for coding, I was already under the idea that standard library or what is in the libraries is the main and central reason for using a certain programming language. There are manual loops in every language, but library algorithms are one the main pillars that explain a language's popularity. C++ is no longer the most popular as more technological trends emerge and different fields of technology seem to prefer other simpler languages, but C++ remains important in systems given its regular updates and its consistent, even if slightly waning over time, popularity in software development.
+
+It is possible to use lambdas too in manual loops but if there is a library, then it simply makes sense to use what is in that library, not make up loops on my own and expect tons of errors and mistakes.
+
+3.
+This exercise obviously assumes the entire data are valid and correct. To validate the input of sorting criteria (Province, Crime, Cases, Resolved...), I would suggest
+
+-validate input in the constructor. This exercise does not say, so I did not validate province, district, and crime, all being obviously normal strings in the data file. Perhaps we can add a try-catch block for these fields as well as year, numCases and m_resolved in case something is not an integer.
+
+For example,
+					base.year = local.substr(0, 5);
+					try {
+						std::stoi(base.year) < 0 ? " " : base.year;
+					}
+					catch (...) {
+						base.year = "0";
+					}
+
+Or simply throw some error message in the case of invalid data input. However, one downside is if there are many criteria then it is doable, but not very practical, to validate strings with multiple try-catch blocks.
+
+-alternatively, we can validate the same criteria in sort() by comparing strings like sort()'s design, or do it in cleanList() by filtering invalid crime types.
+
+In fact, workshop 6 had more focus on validating input (invalid doubles for speed, invalid vehicle type...). If I am to choose, I would prefer validating in the constructor. In this exercise, crime type appears almost all functions. However we redesign this module, it just sounds efficient to validate in just one function so every other function can receive "clean" data.
+
+In addition to the above, I was trying to rewrite display functions without using the iomanip library. For one thing, it is necessary to change insertion operator for part 2 for the different totals and sorting by criteria. For another, it is also possible to merge insertion operator and display()'s code somewhat, but it all depends on what we want. I can recall doing DBS311 and getting extra zeros for writing
+
+out << out.width(10);
+
+The proper way is
+
+out << something;
+out.width(10);
+out << something_else;
+
+Whereas using iomanip,
+
+out << std::setw(10) << something << something_else;
+
+works totally fine. I can say the same for std::fill. Also, it is nececessary to move insertion operator's endl to display because in part 2 all except the last table (required output) expects totals, so you do not end insertion operator with endl. In other words, the for_each lambda (base, i.e. entire tables) is followed by totals. As explained above for for_each, therefore, there are always many ways of writing the same thing.

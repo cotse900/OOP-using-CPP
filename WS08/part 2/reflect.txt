@@ -1,0 +1,47 @@
+/**************************************************
+OOP345NFF Workshop 8
+Professor : Hong Huang
+Student   : Chungon Tse
+ID        : 154928188
+Completed : 16 Nov 2022
+I have done all the coding by myself and
+only copied the code that my professor
+provided to complete my workshops and assignments.
+**************************************************/
+
+1.
+When a smart pointer goes out of scope, its destructor automatically deallocates dynamic memory and there will not be a memory leak. The smart pointer is automatically set to nullptr when it is not initialized or when memory has been released.
+
+In this workshop, writeRaw() and writeSmart() are different functions for the same results, but they are syntactically different. Both use a pointer to an EmployeeWage object pushed into the container of the activeEmp object. However, in writeSmart(), the importance differences are that there is no manual memory allocation and as such the code is shorter when there is no need to use the delete keyword.
+
+In WritingRecord,
+
+	EmployeeWage* wageObject = new EmployeeWage(emp[m].name, sal[n].salary);
+	try {
+		wageObject->rangeValidator();
+		activeEmp += wageObject;
+		delete wageObject;
+	}
+	catch (...) {
+		delete wageObject;
+		throw;
+	}
+
+	std::unique_ptr<EmployeeWage> wageObject(new EmployeeWage(emp[m].name, sal[n].salary));
+	wageObject->rangeValidator();
+	activeEmp += wageObject;
+
+2.
+The difference between raw and smart pointer syntax, as already shown above, is how memory allocation is automatic in the smart pointer. Also, raw pointer and smart pointer use different += operators:
+
+	void operator+=(const std::unique_ptr<T>& object) {
+		list.push_back(*object);
+	}
+
+	void operator+=(const T* object) {
+		list.push_back(*object);
+	}
+
+In this specific case, the unique_ptr takes a class-templated reference to the object whereas the raw pointer takes an address of an object.
+
+Overall, the smart pointer is essentially shorter and easier code. Basically, just because smart pointer was a by-product of exception handling, and it can "take care of itself", there is no need to use any try-catch block for it. shared_ptr would be an interesting inclusion for testing shared ownership.
